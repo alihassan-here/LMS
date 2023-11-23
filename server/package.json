@@ -4,7 +4,7 @@
   "description": "this is learning management system",
   "main": "server.js",
   "scripts": {
-    "dev": "tsnd --respawn ./src/server.ts"
+    "dev": "tsnd --respawn --files ./src/server.ts"
   },
   "author": "Ali Hassan",
   "license": "ISC",
