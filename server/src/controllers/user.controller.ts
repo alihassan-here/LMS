@@ -6,6 +6,7 @@ import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import jwt, { JwtPayload, Secret } from "jsonwebtoken";
 import ejs from "ejs";
 import path from "path";
+import cloudinary from "cloudinary";
 import sendMail from "../utils/sendMail";
 import userModel from "../models/user.model";
 import { accessTokenOptions, refreshTokenOptions, sendToken } from "../utils/jwt";
@@ -153,6 +154,7 @@ export const updateAccessToken = CatchAsyncErrors(async (req: Request, res: Resp
             expiresIn: "5m"
         });
         const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN as string, { expiresIn: "3d" });
+        req.user = user;
         res.cookie("access_token", accessToken, accessTokenOptions);
         res.cookie("refresh_token", refreshToken, refreshTokenOptions);
         res.status(200).json({ success: true, accessToken });
@@ -192,3 +194,109 @@ export const socialAuth = CatchAsyncErrors(async (req: Request, res: Response, n
         return next(new ErrorHandler(400, error.message));
     }
 });
+
+
+//UPDATE USER INFO
+interface IUpdateUserInfo {
+    name?: string;
+    email?: string;
+}
+
+export const updateUserInfo = CatchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { name, email } = req.body as IUpdateUserInfo;
+        const userId = req.user?._id;
+        const user = await userModel.findById(userId);
+        if (email && user) {
+            const isEmailExist = await userModel.findOne({ email });
+            if (isEmailExist) {
+                return next(new ErrorHandler(400, "Email already exists"));
+            }
+            user.email = email;
+        }
+        if (name && user) {
+            user.name = name;
+        }
+        await user?.save();
+        await redis.set(userId, JSON.stringify(user));
+        res.status(200).json({ success: true, user });
+    } catch (error: any) {
+        return next(new ErrorHandler(400, error.message));
+    }
+});
+
+//UPDATE USER PASSWORD
+interface IUpdatePassword {
+    oldPassword: string,
+    newPassword: string
+}
+
+export const updatePassword = CatchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { oldPassword, newPassword } = req.body as IUpdatePassword;
+        if (!oldPassword || !newPassword) {
+            return next(new ErrorHandler(400, "Please enter old and new password"));
+        }
+        const user = await userModel.findById(req.user?._id).select("+password");
+        console.log(user);
+        if (user?.password === undefined) {
+            return next(new ErrorHandler(400, "Invalid user"));
+        }
+        const isPasswordMatch = await user.comparePassword(oldPassword);
+        if (!isPasswordMatch) {
+            return next(new ErrorHandler(400, "Invalid old password"));
+        }
+        user.password = newPassword;
+        await user.save();
+        await redis.set(req.user?._id, JSON.stringify(user));
+        res.status(200).json({
+            success: true,
+            user
+        });
+    } catch (error: any) {
+        return next(new ErrorHandler(400, error.message));
+    }
+});
+
+//UPDATE PROFILE PICTURE
+interface IUpdateProfilePicture {
+    avatar: string
+}
+
+export const updateProfilePicture = CatchAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { avatar } = req.body as IUpdateProfilePicture;
+        const userId = req.user?._id;
+        const user = await userModel.findById(userId);
+        if (avatar && user) {
+            if (user?.avatar?.public_id) {
+                await cloudinary.v2.uploader.destroy(user.avatar?.public_id);
+                const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+                    folder: "avatars",
+                    width: "150",
+                });
+                user.avatar = {
+                    public_id: myCloud.public_id,
+                    url: myCloud.secure_url
+                }
+            } else {
+                const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+                    folder: "avatars",
+                    width: "150",
+                });
+                user.avatar = {
+                    public_id: myCloud.public_id,
+                    url: myCloud.secure_url
+                }
+            }
+        }
+        await user?.save();
+        await redis.set(userId, JSON.stringify(user));
+        res.status(200).json({
+            success: true,
+            user
+        })
+    } catch (error: any) {
+        return next(new ErrorHandler(400, error.message));
+    }
+})
