@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ErrorMiddleware } from "../src/middleware/error";
 import userRouter from "./routes/user.route";
+import courseRouter from "./routes/course.route";
 
 
 //BODY PARSER
@@ -28,7 +29,8 @@ app.get("/test", (req: Request, res: Response, next: NextFunction) => {
 
 
 //ROUTES
-app.use("/api/v1", userRouter)
+app.use("/api/v1", userRouter);
+app.use("/api/v1", courseRouter);
 //UNKNOWN ROUTES
 app.all("*", (req: Request, res: Response, next: NextFunction) => {
     const err = new Error(`Route ${req.originalUrl} not found`) as any;

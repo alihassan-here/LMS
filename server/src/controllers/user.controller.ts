@@ -51,7 +51,7 @@ export const register = CatchAsyncErrors(async (req: Request, res: Response, nex
             activationToken: activationToken.token,
         })
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message))
+        return next(new ErrorHandler(500, error.message))
     }
 });
 
@@ -90,7 +90,7 @@ export const activateUser = CatchAsyncErrors(async (req: Request, res: Response,
             success: true
         })
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -116,7 +116,7 @@ export const login = CatchAsyncErrors(async (req: Request, res: Response, next: 
         }
         sendToken(user, 200, res);
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -132,7 +132,7 @@ export const logout = CatchAsyncErrors(async (req: Request, res: Response, next:
             message: "Logged out successfully",
         })
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -159,7 +159,7 @@ export const updateAccessToken = CatchAsyncErrors(async (req: Request, res: Resp
         res.cookie("refresh_token", refreshToken, refreshTokenOptions);
         res.status(200).json({ success: true, accessToken });
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -169,7 +169,7 @@ export const getUserInfo = CatchAsyncErrors(async (req: Request, res: Response, 
         const userId = req.user?._id;
         getUserByID(userId, res);
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -191,7 +191,7 @@ export const socialAuth = CatchAsyncErrors(async (req: Request, res: Response, n
             sendToken(user, 200, res);
         }
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -221,7 +221,7 @@ export const updateUserInfo = CatchAsyncErrors(async (req: Request, res: Respons
         await redis.set(userId, JSON.stringify(user));
         res.status(200).json({ success: true, user });
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -254,7 +254,7 @@ export const updatePassword = CatchAsyncErrors(async (req: Request, res: Respons
             user
         });
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
 
@@ -297,6 +297,6 @@ export const updateProfilePicture = CatchAsyncErrors(async (req: Request, res: R
             user
         })
     } catch (error: any) {
-        return next(new ErrorHandler(400, error.message));
+        return next(new ErrorHandler(500, error.message));
     }
 });
